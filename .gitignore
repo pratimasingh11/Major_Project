@@ -1,0 +1,10 @@
+node_modules/
+.next/
+dist/
+# Removed because we do not use SQLite
+# /backend/db/*.db
+# !backend/db/load_csv_to_db.py
+.env
+.env.local
+__pycache__/
+*.pyc
