@@ -2,18 +2,20 @@ from fastapi import APIRouter, HTTPException  # FastAPI tools: APIRouter to crea
 from pydantic import BaseModel  # BaseModel to define input/output data structure (schemas)
 from sqlalchemy import create_engine, text  # SQLAlchemy tools to connect to DB and run SQL queries
 import pandas as pd 
+# ✅ Import the shared engine (NOT DB_CONFIG)
+from core.database import engine
 
 router = APIRouter()  # Create a new router for market-movers endpoints
 
 # --- Database config ---
 # Store database connection info
-DB_CONFIG = {
-    "dbname": "stock_data",
-    "user": "postgres",
-    "password": "root",
-    "host": "localhost",
-    "port": "5433",
-}
+# DB_CONFIG = {
+#     "dbname": "stock_data",
+#     "user": "postgres",
+#     "password": "root",
+#     "host": "localhost",
+#     "port": "5433",
+# }
 
 # --- Response models ---
 class StockData(BaseModel):
@@ -34,9 +36,9 @@ class MarketMoversResponse(BaseModel):
     losers: list[StockData]  # Top losers
 
 # --- Create SQLAlchemy engine ---
-# Build DB URL and create engine to connect
-DB_URL = f"postgresql+psycopg2://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['dbname']}"
-engine = create_engine(DB_URL, echo=False, future=True)  # echo=False disables SQL logging, future=True uses latest SQLAlchemy API
+# # Build DB URL and create engine to connect
+# DB_URL = f"postgresql+psycopg2://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['dbname']}"
+# engine = create_engine(DB_URL, echo=False, future=True)  # echo=False disables SQL logging, future=True uses latest SQLAlchemy API
 
 # --- Endpoint ---
 @router.get("/market-movers", response_model=MarketMoversResponse)

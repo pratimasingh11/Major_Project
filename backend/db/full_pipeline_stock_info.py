@@ -1,24 +1,18 @@
-from pathlib import Path  # For handling file paths easily
-import pandas as pd       # For reading CSVs and data manipulation
-import psycopg2           # For connecting to PostgreSQL using raw SQL
-from psycopg2.extras import execute_values  # For batch inserting/updating efficiently
+from pathlib import Path
+import pandas as pd
+import psycopg2
+from psycopg2.extras import execute_values
 
-# Database configuration
-DB_CONFIG = {
-    "dbname": "stock_data",  # Database name
-    "user": "postgres",      # Username
-    "password": "root",      # Password
-    "host": "localhost",     # Database host
-    "port": "5433"           # Port number
-}
+# ✅ IMPORT DATABASE CONFIG FROM CORE
+from core.database import DB_CONFIG
+
 
 def run_stock_info_pipeline(
-    merged_stock_path=None,  # Path to merged stock CSV
-    company_list_path=None,  # Path to company list CSV
-    output_path=None         # Path to save cleaned CSV
+    merged_stock_path=None,
+    company_list_path=None,
+    output_path=None
 ):
-
-    """ 
+    """
     Stock info pipeline:
     1. Load merged stock and company list CSVs
     2. Clean and merge data
@@ -26,7 +20,7 @@ def run_stock_info_pipeline(
     4. Insert or update data into PostgreSQL
     """
 
-    base_path = Path(__file__).parent  # Directory of this script
+    base_path = Path(__file__).parent
 
     # -------------------------------
     # Default file paths
@@ -39,16 +33,16 @@ def run_stock_info_pipeline(
         output_path = base_path / "../../data/clean/clean_stock_info.csv"
 
     # -------------------------------
-    # Load CSVs into pandas DataFrames
+    # Load CSVs
     # -------------------------------
-    merged_df = pd.read_csv(merged_stock_path)  # Merged stock data
-    company_df = pd.read_csv(company_list_path) # Company info
+    merged_df = pd.read_csv(merged_stock_path)
+    company_df = pd.read_csv(company_list_path)
 
     # -------------------------------
     # Prepare company info
     # -------------------------------
-    company_df = company_df[['Symbol', 'Company Name', 'Sector']].copy()  # Keep relevant columns
-    company_df.columns = ['symbol', 'company_name', 'category']          # Rename columns
+    company_df = company_df[['Symbol', 'Company Name', 'Sector']].copy()
+    company_df.columns = ['symbol', 'company_name', 'category']
 
     # -------------------------------
     # Standardize symbols
@@ -60,58 +54,58 @@ def run_stock_info_pipeline(
     # Merge stock and company info
     # -------------------------------
     merged_info = pd.merge(
-        merged_df[['symbol']].drop_duplicates(),  # Only unique symbols
+        merged_df[['symbol']].drop_duplicates(),
         company_df,
         on='symbol',
         how='left'
     )
 
     # -------------------------------
-    # Fill missing values and drop duplicates
+    # Handle missing values
     # -------------------------------
     merged_info['company_name'] = merged_info['company_name'].fillna('Unknown Company')
     merged_info['category'] = merged_info['category'].fillna('Others')
-    merged_info = merged_info.drop_duplicates(subset=['symbol'])  # Prevent ON CONFLICT errors
+    merged_info = merged_info.drop_duplicates(subset=['symbol'])
 
     # -------------------------------
     # Save cleaned CSV
     # -------------------------------
-    merged_info.to_csv(output_path, index=False)  
+    merged_info.to_csv(output_path, index=False)
     print(f"Cleaned stock info saved to: {output_path}")
 
     # -------------------------------
-    # Insert/update data in PostgreSQL
+    # Insert / Update PostgreSQL
     # -------------------------------
-    conn = psycopg2.connect(**DB_CONFIG)  # Connect to database
-    cur = conn.cursor()                    # Cursor for executing SQL
+    conn = psycopg2.connect(**DB_CONFIG)
+    cur = conn.cursor()
 
-    # Convert DataFrame to list of tuples
-    values = [tuple(x) for x in merged_info.to_numpy()]
+    values = [tuple(row) for row in merged_info.to_numpy()]
+    batch_size = 100
 
-    batch_size = 100  # Insert/update in batches to avoid huge queries aplitting into batches
     for i in range(0, len(values), batch_size):
         execute_values(
             cur,
             """
             INSERT INTO stock_info (symbol, company_name, category)
             VALUES %s
-            ON CONFLICT (symbol)  -- If symbol exists, update instead
+            ON CONFLICT (symbol)
             DO UPDATE SET
                 company_name = EXCLUDED.company_name,
                 category = EXCLUDED.category
             """,
-            values[i:i+batch_size]
+            values[i:i + batch_size]
         )
 
-    conn.commit()  # Commit all changes
-    cur.close()    # Close cursor
-    conn.close()   # Close connection
-    print(f"{len(values)} rows inserted/updated in stock_info table.")
+    conn.commit()
+    cur.close()
+    conn.close()
 
-    return merged_info  # Return cleaned DataFrame
+    print(f"{len(values)} rows inserted/updated in stock_info table.")
+    return merged_info
+
 
 # -------------------------------
-# Run pipeline if this script is executed directly
+# Run pipeline directly
 # -------------------------------
 if __name__ == "__main__":
     run_stock_info_pipeline()

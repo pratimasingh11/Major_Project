@@ -9,7 +9,9 @@ sys.path.append(PARENT_DIR)                             # Add parent directory t
 # Import libraries for database, data handling, and numerical operations
 import psycopg2  
 import pandas as pd  
-import numpy as np   
+import numpy as np  
+# ✅ Import centralized DB configuration
+from core.database import DB_CONFIG 
 
 # Import functions from your own modules
 from ML.lstm_model import create_lstm                 # Function to create LSTM model
@@ -17,13 +19,13 @@ from utils.preprocessing import scale_data, create_sequences  # Functions to pre
 
 
 # Database connection configuration
-DB_CONFIG = {
-    "dbname": "stock_data",  
-    "user": "postgres",      
-    "password": "root",      
-    "host": "localhost",     
-    "port": "5433",          
-}
+# DB_CONFIG = {
+#     "dbname": "stock_data",  
+#     "user": "postgres",      
+#     "password": "root",      
+#     "host": "localhost",     
+#     "port": "5433",          
+# }
 
 # Set up directory to save trained models
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))  # Current script directory

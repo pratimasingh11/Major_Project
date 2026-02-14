@@ -7,6 +7,9 @@ import psycopg2
 # Import execute_values for fast bulk insert into PostgreSQL
 from psycopg2.extras import execute_values
 
+# ✅ Import centralized DB configuration
+from core.database import DB_CONFIG
+
 
 # Path to the cleaned CSV file (relative path)
 csv_file = '../../data/clean/merged_stock_nepse.csv'
@@ -39,15 +42,16 @@ values = [tuple(row) for row in df.itertuples(index=False, name=None)]
 # -------------------------------
 # Connect to PostgreSQL database
 # -------------------------------
-conn = psycopg2.connect(
-    dbname='stock_data',   # Database name
-    user='postgres',       # Database username
-    password='root',       # Database password
-    host='localhost',      # Database host
-    port='5433'            # Database port
-)
+# conn = psycopg2.connect(
+#     dbname='stock_data',   # Database name
+#     user='postgres',       # Database username
+#     password='root',       # Database password
+#     host='localhost',      # Database host
+#     port='5433'            # Database port
+# )
 
 # Create a cursor to execute SQL commands
+conn = psycopg2.connect(**DB_CONFIG)
 cur = conn.cursor()
 
 # --------------------------------------------------

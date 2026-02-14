@@ -1,0 +1,66 @@
+version: "3.9"
+
+services:
+  # -------------------------------
+  # PostgreSQL Database
+  # -------------------------------
+  postgres:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_DB: stock_data
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+    ports:
+      - "5433:5432"   # EC2 host port 5433 maps to container port 5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # -------------------------------
+  # Backend: FastAPI
+  # -------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: stock_data
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: root
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # -------------------------------
+  # Frontend: Next.js
+  # -------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_IGNORE_TS_ERRORS: true
+    depends_on:
+      - backend
+
+# -------------------------------
+# Docker Volumes
+# -------------------------------
+volumes:
+  postgres_data:

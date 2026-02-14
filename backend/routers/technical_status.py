@@ -4,19 +4,21 @@ from pydantic import BaseModel
 import psycopg2
 import pandas as pd
 import numpy as np
+# ✅ Import centralized DB configuration
+from core.database import DB_CONFIG
 
 # Initialize API router
 router = APIRouter()
 
 # --- Database config ---
 # PostgreSQL connection settings
-DB_CONFIG = {
-    "dbname": "stock_data",
-    "user": "postgres",
-    "password": "root",
-    "host": "localhost",
-    "port": "5433",
-}
+# DB_CONFIG = {
+#     "dbname": "stock_data",
+#     "user": "postgres",
+#     "password": "root",
+#     "host": "localhost",
+#     "port": "5433",
+# }
 
 # --- Response model ---
 class TrendResponse(BaseModel):
